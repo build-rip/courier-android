@@ -1,0 +1,96 @@
+name: Publish prerelease APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+
+concurrency:
+  group: publish-prerelease-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Decode release keystore
+        env:
+          ANDROID_SIGNING_KEYSTORE_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_B64 }}
+        run: |
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/courier-android-release.jks"
+
+      - name: Derive release metadata
+        id: meta
+        run: |
+          version_name=$(python3 - <<'PY'
+          import pathlib, re
+          content = pathlib.Path("app/build.gradle.kts").read_text()
+          match = re.search(r'val configuredVersionName = .*\?:\s*"([^"]+)"', content)
+          if not match:
+              raise SystemExit("Could not derive configuredVersionName from app/build.gradle.kts")
+          print(match.group(1))
+          PY
+          )
+          short_sha="${GITHUB_SHA::7}"
+          version_code=$((1000 + GITHUB_RUN_NUMBER))
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag_name="${GITHUB_REF_NAME}"
+          else
+            tag_name="prerelease-${version_name}-${GITHUB_RUN_NUMBER}-${short_sha}"
+          fi
+
+          echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+          echo "release_name=Prerelease ${version_name} (${short_sha})" >> "$GITHUB_OUTPUT"
+          echo "asset_name=Courier-Android-${version_name}-${version_code}-${short_sha}-release.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Build signed release APK
+        env:
+          COURIER_UPLOAD_STORE_FILE: ${{ runner.temp }}/courier-android-release.jks
+          COURIER_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          COURIER_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          COURIER_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          COURIER_VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          COURIER_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+        run: ./gradlew :app:assembleRelease --build-cache --configuration-cache --parallel
+
+      - name: Rename APK for release
+        run: cp app/build/outputs/apk/release/app-release.apk "${{ steps.meta.outputs.asset_name }}"
+
+      - name: Publish prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          name: ${{ steps.meta.outputs.release_name }}
+          prerelease: true
+          files: ${{ steps.meta.outputs.asset_name }}
+          body: |
+            Automated prerelease build for `${{ github.sha }}`.
+
+            Download the attached signed release APK and install it over your existing app.
+            This build uses the stable project signing key and an incrementing version code, so Android and Obtainium can update it in place without wiping pairing state.

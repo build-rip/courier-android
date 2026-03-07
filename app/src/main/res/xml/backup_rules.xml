@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and below: fullBackupContent rules -->
+<full-backup-content>
+    <!-- Include auth/pairing DataStore -->
+    <include domain="file" path="datastore/auth_prefs.preferences_pb" />
+</full-backup-content>
