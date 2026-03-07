@@ -13,8 +13,39 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Validate debug build
+        run: ./gradlew :app:compileDebugKotlin --build-cache --configuration-cache --parallel
+
+  build-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+      asset_name: ${{ steps.meta.outputs.asset_name }}
 
     steps:
       - name: Check out repository
@@ -82,13 +113,34 @@ jobs:
       - name: Rename APK for release
         run: cp app/build/outputs/apk/release/app-release.apk "${{ steps.meta.outputs.asset_name }}"
 
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: courier-android-release-apk
+          path: ${{ steps.meta.outputs.asset_name }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - validate
+      - build-release
+
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: courier-android-release-apk
+
       - name: Publish prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.meta.outputs.tag_name }}
-          name: ${{ steps.meta.outputs.release_name }}
+          tag_name: ${{ needs.build-release.outputs.tag_name }}
+          name: ${{ needs.build-release.outputs.release_name }}
           prerelease: true
-          files: ${{ steps.meta.outputs.asset_name }}
+          files: ${{ needs.build-release.outputs.asset_name }}
           body: |
             Automated prerelease build for `${{ github.sha }}`.
 
