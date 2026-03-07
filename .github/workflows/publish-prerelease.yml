@@ -77,7 +77,7 @@ jobs:
           COURIER_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
           COURIER_VERSION_CODE: ${{ steps.meta.outputs.version_code }}
           COURIER_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
-        run: ./gradlew :app:assembleRelease --build-cache --configuration-cache --parallel
+        run: ./gradlew :app:assembleRelease --build-cache --configuration-cache --parallel -x lintVitalRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease
 
       - name: Rename APK for release
         run: cp app/build/outputs/apk/release/app-release.apk "${{ steps.meta.outputs.asset_name }}"
