@@ -52,8 +52,8 @@ fun AttachmentThumbnail(
         ) {
             val model: Any? = if (attachment.isDownloaded) {
                 File(attachment.localFilePath!!)
-            } else if (attachment.downloadId != null) {
-                "$baseUrl/api/attachments/${attachment.downloadId}"
+            } else if (attachment.guid.isNotBlank()) {
+                "$baseUrl/api/attachments/${attachment.guid}"
             } else {
                 null
             }

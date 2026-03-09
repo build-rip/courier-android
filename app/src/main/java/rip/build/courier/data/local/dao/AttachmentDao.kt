@@ -49,6 +49,14 @@ interface AttachmentDao {
     @Query("SELECT a.* FROM attachments a INNER JOIN messages m ON a.messageRowID = m.rowID WHERE m.chatRowID = :chatRowID")
     suspend fun getByChatId(chatRowID: Long): List<AttachmentEntity>
 
+    @Query("""
+        SELECT a.* FROM attachments a
+        INNER JOIN messages m ON a.messageRowID = m.rowID
+        WHERE m.chatRowID = :chatRowID
+          AND a.downloadState = 'pending'
+    """)
+    suspend fun getPendingByChatId(chatRowID: Long): List<AttachmentEntity>
+
     @Query("DELETE FROM attachments WHERE messageRowID IN (SELECT rowID FROM messages WHERE chatRowID = :chatRowID)")
     suspend fun deleteByChatId(chatRowID: Long)
 

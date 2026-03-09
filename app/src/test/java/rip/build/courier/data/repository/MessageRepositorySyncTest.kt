@@ -369,6 +369,52 @@ class MessageRepositorySyncTest {
         assertNull(reactions.single().emoji)
     }
 
+    @Test
+    fun syncChat_keepsGuidBackedAttachmentsDownloadable() = runTest {
+        seedChat(latestEventSequence = 1)
+        api.enqueueConversationEvents(
+            ConversationEventsResponseDto(
+                conversationId = CONVERSATION_ID,
+                conversationVersion = 1,
+                latestEventSequence = 1,
+                from = 0,
+                nextFrom = 1,
+                hasMore = false,
+                events = listOf(
+                    event(
+                        sequence = 1,
+                        type = "messageCreated",
+                        payload = mapOf(
+                            "messageID" to "m1",
+                            "senderID" to "+15555550100",
+                            "isFromMe" to false,
+                            "service" to "iMessage",
+                            "sentAt" to "2026-03-09T00:00:00Z",
+                            "text" to "photo",
+                            "attachments" to listOf(
+                                mapOf(
+                                    "attachmentID" to "at_0_m1",
+                                    "transferName" to "photo.jpg",
+                                    "mimeType" to "image/jpeg",
+                                    "totalBytes" to 12345,
+                                    "isSticker" to false
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        repository.syncChat(CHAT_ROW_ID).getOrThrow()
+
+        val message = requireNotNull(db.messageDao().getByGuid("m1"))
+        val attachments = db.attachmentDao().getByMessageId(message.rowID)
+        assertEquals(1, attachments.size)
+        assertEquals("at_0_m1", attachments.single().guid)
+        assertEquals("pending", attachments.single().downloadState)
+    }
+
     private suspend fun seedChat(
         conversationVersion: Int = 1,
         latestEventSequence: Long,

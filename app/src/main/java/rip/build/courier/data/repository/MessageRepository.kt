@@ -45,6 +45,7 @@ import rip.build.courier.data.remote.api.dto.RichTextDto
 import rip.build.courier.data.remote.api.dto.SendMessageRequest
 import rip.build.courier.data.remote.api.dto.TapbackRequest
 import rip.build.courier.domain.model.AttachmentInfo
+import rip.build.courier.domain.model.AttachmentKey
 import rip.build.courier.domain.model.Message
 import rip.build.courier.domain.model.Reaction
 import rip.build.courier.domain.model.ReactionType
@@ -120,6 +121,14 @@ class MessageRepository @Inject constructor(
 
     fun observeMediaForChat(chatRowID: Long): Flow<List<AttachmentInfo>> =
         attachmentDao.observeMediaByChatId(chatRowID).map { attachments -> attachments.map { it.toDomain() } }
+
+    suspend fun getPendingAttachmentKeys(chatRowID: Long): List<AttachmentKey> =
+        attachmentDao.getPendingByChatId(chatRowID).map { attachment ->
+            AttachmentKey(
+                messageRowID = attachment.messageRowID,
+                attachmentRowID = attachment.rowID
+            )
+        }
 
     suspend fun syncChat(chatRowID: Long): Result<Pair<Int, Int>> {
         val mutex = syncMutexes.getOrPut(chatRowID) { Mutex() }
@@ -817,9 +826,8 @@ class MessageRepository @Inject constructor(
         val localAttachmentId = stableId("attachment", attachmentID)
         val existing = existingAttachments[attachmentID]
         val downloadId = existing?.downloadId ?: attachmentID.toLongOrNull()
+        val preservedState = existing?.downloadState?.takeUnless { it == "unavailable" }
         val initialState = when {
-            existing != null -> existing.downloadState
-            downloadId == null -> "unavailable"
             totalBytes > MAX_AUTO_DOWNLOAD_BYTES -> "too_large"
             else -> "pending"
         }
@@ -833,7 +841,7 @@ class MessageRepository @Inject constructor(
             transferName = transferName,
             totalBytes = totalBytes,
             isSticker = isSticker,
-            downloadState = existing?.downloadState ?: initialState,
+            downloadState = preservedState ?: initialState,
             downloadedBytes = existing?.downloadedBytes ?: 0,
             localFilePath = existing?.localFilePath,
             downloadAttempts = existing?.downloadAttempts ?: 0

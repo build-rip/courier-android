@@ -11,7 +11,6 @@ import rip.build.courier.domain.model.AttachmentInfo
 import rip.build.courier.domain.model.Chat
 import rip.build.courier.domain.model.Message
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Collections
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -39,7 +38,11 @@ class ChatDetailViewModel @Inject constructor(
         viewModelScope.launch {
             activeChatRowID.collect { chatRowID ->
                 launch {
-                    messageRepository.syncChat(chatRowID).onFailure {
+                    messageRepository.syncChat(chatRowID).onSuccess {
+                        attachmentDownloadManager.enqueueDownloads(
+                            messageRepository.getPendingAttachmentKeys(chatRowID)
+                        )
+                    }.onFailure {
                         _errorMessage.emit(it.message ?: "Couldn't sync conversation")
                     }
                 }
@@ -134,9 +137,19 @@ class ChatDetailViewModel @Inject constructor(
     fun observeAttachments(messageRowID: Long): Flow<List<AttachmentInfo>> =
         messageRepository.observeAttachments(messageRowID)
 
-    private val metadataFetchInFlight = Collections.synchronizedSet(mutableSetOf<Long>())
-
     fun ensureAttachmentMetadata(messageRowID: Long) {
-        metadataFetchInFlight.add(messageRowID)
+        viewModelScope.launch {
+            attachmentDownloadManager.enqueueDownloads(
+                messageRepository.observeAttachments(messageRowID)
+                    .first()
+                    .filter { it.downloadState == "pending" }
+                    .map { attachment ->
+                        rip.build.courier.domain.model.AttachmentKey(
+                            messageRowID = attachment.messageRowID,
+                            attachmentRowID = attachment.rowID
+                        )
+                    }
+            )
+        }
     }
 }
