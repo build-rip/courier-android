@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.HideImage
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Videocam
@@ -49,22 +50,49 @@ fun AttachmentThumbnail(
                     onLongClick = onLongPress
                 )
         ) {
-            val model: Any = if (attachment.isDownloaded) {
+            val model: Any? = if (attachment.isDownloaded) {
                 File(attachment.localFilePath!!)
+            } else if (attachment.downloadId != null) {
+                "$baseUrl/api/attachments/${attachment.downloadId}"
             } else {
-                "$baseUrl/api/attachments/${attachment.rowID}"
+                null
             }
 
-            AsyncImage(
-                model = model,
-                contentDescription = attachment.transferName,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 160.dp, minHeight = 120.dp)
-                    .widthIn(max = 240.dp)
-                    .heightIn(max = 240.dp)
-                    .clip(RoundedCornerShape(12.dp))
-            )
+            if (model != null) {
+                AsyncImage(
+                    model = model,
+                    contentDescription = attachment.transferName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 160.dp, minHeight = 120.dp)
+                        .widthIn(max = 240.dp)
+                        .heightIn(max = 240.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 160.dp, minHeight = 120.dp)
+                        .widthIn(max = 240.dp)
+                        .heightIn(max = 240.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.HideImage,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Preview unavailable",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             // Download progress overlay
             if (attachment.isDownloading) {
@@ -122,6 +150,31 @@ fun AttachmentThumbnail(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+                }
+            }
+
+            if (attachment.isUnavailable) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = 240.dp)
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text(
+                            text = "Download unavailable",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

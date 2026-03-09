@@ -105,4 +105,5 @@ object AppModule {
     @Provides fun provideReactionDao(db: AppDatabase): ReactionDao = db.reactionDao()
     @Provides fun provideParticipantDao(db: AppDatabase): ParticipantDao = db.participantDao()
     @Provides fun provideAttachmentDao(db: AppDatabase): AttachmentDao = db.attachmentDao()
+    @Provides fun provideConversationEventDao(db: AppDatabase): ConversationEventDao = db.conversationEventDao()
 }

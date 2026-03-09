@@ -43,6 +43,15 @@ interface AttachmentDao {
     @Query("SELECT * FROM attachments WHERE messageRowID = :messageRowID AND rowID = :rowID")
     suspend fun getById(messageRowID: Long, rowID: Long): AttachmentEntity?
 
+    @Query("SELECT * FROM attachments WHERE guid = :guid LIMIT 1")
+    suspend fun getByGuid(guid: String): AttachmentEntity?
+
+    @Query("SELECT a.* FROM attachments a INNER JOIN messages m ON a.messageRowID = m.rowID WHERE m.chatRowID = :chatRowID")
+    suspend fun getByChatId(chatRowID: Long): List<AttachmentEntity>
+
+    @Query("DELETE FROM attachments WHERE messageRowID IN (SELECT rowID FROM messages WHERE chatRowID = :chatRowID)")
+    suspend fun deleteByChatId(chatRowID: Long)
+
     @Query("""
         SELECT a.* FROM attachments a
         INNER JOIN messages m ON a.messageRowID = m.rowID

@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "chats")
 data class ChatEntity(
     @PrimaryKey val rowID: Long,
+    val conversationId: String,
     val guid: String,
     val chatIdentifier: String,
     val displayName: String?,
@@ -15,13 +16,12 @@ data class ChatEntity(
     val lastMessageText: String?,
     val lastMessageIsFromMe: Boolean?,
     val isPinned: Boolean = false,
-    val lastMessageSyncRowID: Long = 0,
-    val lastReactionSyncRowID: Long = 0,
-    val lastReadReceiptSyncTimestamp: String? = null,
-    val lastDeliveryReceiptSyncTimestamp: String? = null,
+    val conversationVersion: Int = 0,
+    val latestEventSequence: Long = 0,
+    val localEventSequence: Long = 0,
+    val pendingFullResync: Boolean = false,
+    val readAckPending: Boolean = false,
     val hasUnreads: Boolean = false,
     val unreadCount: Int = 0,
-    val lastReadMessageDate: String? = null,
-    val maxReadReceiptDate: String? = null,
-    val maxDeliveryReceiptDate: String? = null
+    val lastReadMessageDate: String? = null
 )

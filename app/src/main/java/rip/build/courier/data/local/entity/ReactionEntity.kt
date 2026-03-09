@@ -1,9 +1,13 @@
 package rip.build.courier.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "reactions")
+@Entity(
+    tableName = "reactions",
+    indices = [Index("chatRowID"), Index("targetMessageGUID")]
+)
 data class ReactionEntity(
     @PrimaryKey val rowID: Long,
     val guid: String,

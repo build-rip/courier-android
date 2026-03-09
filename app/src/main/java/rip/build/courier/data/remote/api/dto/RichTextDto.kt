@@ -4,13 +4,13 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class RichTextDto(
-    val parts: List<RichTextPartDto>
+    val parts: List<RichTextPartDto> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
 data class RichTextPartDto(
     val text: String,
-    val attributes: RichTextAttributesDto
+    val attributes: RichTextAttributesDto = RichTextAttributesDto()
 )
 
 @JsonClass(generateAdapter = true)

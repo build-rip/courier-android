@@ -17,6 +17,9 @@ interface MessageDao {
     @Query("SELECT MAX(rowID) FROM messages WHERE chatRowID = :chatRowID")
     suspend fun getMaxRowID(chatRowID: Long): Long?
 
+    @Query("SELECT * FROM messages WHERE chatRowID = :chatRowID ORDER BY date ASC")
+    suspend fun getByChatId(chatRowID: Long): List<MessageEntity>
+
     @Upsert
     suspend fun upsert(message: MessageEntity)
 
@@ -35,6 +38,12 @@ interface MessageDao {
     @Query("UPDATE messages SET isRead = 1 WHERE chatRowID = :chatRowID AND isFromMe = 0")
     suspend fun markAllIncomingRead(chatRowID: Long)
 
+    @Query("SELECT COUNT(*) FROM messages WHERE chatRowID = :chatRowID AND isFromMe = 0 AND isRead = 0 AND deletedAt IS NULL")
+    suspend fun countUnreadIncoming(chatRowID: Long): Int
+
+    @Query("SELECT MAX(date) FROM messages WHERE chatRowID = :chatRowID AND isFromMe = 0 AND isRead = 1 AND deletedAt IS NULL")
+    suspend fun getLastReadIncomingDate(chatRowID: Long): String?
+
     @Query("UPDATE messages SET sendStatus = :status, sendError = :error WHERE rowID = :rowID")
     suspend fun updateSendStatus(rowID: Long, status: String?, error: String?)
 
@@ -46,6 +55,15 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE chatRowID = :chatRowID AND isFromMe = 1 AND sendStatus IS NOT NULL ORDER BY date ASC LIMIT 1")
     suspend fun findOldestPendingInChat(chatRowID: Long): MessageEntity?
+
+    @Query("SELECT * FROM messages WHERE chatRowID = :chatRowID AND sendStatus IS NOT NULL ORDER BY date ASC")
+    suspend fun getPendingByChatId(chatRowID: Long): List<MessageEntity>
+
+    @Query("DELETE FROM messages WHERE chatRowID = :chatRowID AND sendStatus IS NULL")
+    suspend fun deleteConfirmedByChatId(chatRowID: Long)
+
+    @Query("DELETE FROM messages WHERE chatRowID = :chatRowID")
+    suspend fun deleteByChatId(chatRowID: Long)
 
     @Query("""
         SELECT m.rowID FROM messages m

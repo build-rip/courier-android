@@ -9,7 +9,10 @@ class BridgeApiException(
 
     val displayMessage: String
         get() = try {
-            JSONObject(errorBody).optString("reason", "").ifEmpty { errorBody }
+            JSONObject(errorBody)
+                .optString("failureReason", "")
+                .ifEmpty { JSONObject(errorBody).optString("reason", "") }
+                .ifEmpty { errorBody }
         } catch (_: Exception) {
             errorBody
         }

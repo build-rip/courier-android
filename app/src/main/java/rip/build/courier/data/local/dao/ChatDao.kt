@@ -17,6 +17,9 @@ interface ChatDao {
     @Query("SELECT * FROM chats WHERE rowID = :rowID")
     suspend fun getById(rowID: Long): ChatEntity?
 
+    @Query("SELECT * FROM chats WHERE conversationId = :conversationId")
+    suspend fun getByConversationId(conversationId: String): ChatEntity?
+
     @Upsert
     suspend fun upsert(chat: ChatEntity)
 
@@ -44,24 +47,27 @@ interface ChatDao {
     @Query("SELECT * FROM chats")
     suspend fun getAll(): List<ChatEntity>
 
-    @Query("UPDATE chats SET lastMessageSyncRowID = :rowID WHERE rowID = :chatRowID")
-    suspend fun updateMessageSyncCursor(chatRowID: Long, rowID: Long)
+    @Query("UPDATE chats SET latestEventSequence = :latestEventSequence, localEventSequence = :localEventSequence, pendingFullResync = :pendingFullResync WHERE rowID = :chatRowID")
+    suspend fun updateSyncState(chatRowID: Long, latestEventSequence: Long, localEventSequence: Long, pendingFullResync: Boolean)
 
-    @Query("UPDATE chats SET lastReactionSyncRowID = :rowID WHERE rowID = :chatRowID")
-    suspend fun updateReactionSyncCursor(chatRowID: Long, rowID: Long)
+    @Query("UPDATE chats SET latestEventSequence = :latestEventSequence WHERE rowID = :chatRowID")
+    suspend fun updateLatestEventSequence(chatRowID: Long, latestEventSequence: Long)
 
-    @Query("UPDATE chats SET lastReadReceiptSyncTimestamp = :timestamp WHERE rowID = :chatRowID")
-    suspend fun updateReadReceiptSyncCursor(chatRowID: Long, timestamp: String?)
+    @Query("UPDATE chats SET pendingFullResync = :pendingFullResync WHERE rowID = :chatRowID")
+    suspend fun updatePendingFullResync(chatRowID: Long, pendingFullResync: Boolean)
 
-    @Query("UPDATE chats SET lastDeliveryReceiptSyncTimestamp = :timestamp WHERE rowID = :chatRowID")
-    suspend fun updateDeliveryReceiptSyncCursor(chatRowID: Long, timestamp: String?)
+    @Query("UPDATE chats SET readAckPending = :readAckPending WHERE rowID = :chatRowID")
+    suspend fun updateReadAckPending(chatRowID: Long, readAckPending: Boolean)
 
-    @Query("UPDATE chats SET lastMessageSyncRowID = 0, lastReactionSyncRowID = 0, lastReadReceiptSyncTimestamp = NULL, lastDeliveryReceiptSyncTimestamp = NULL")
-    suspend fun resetAllSyncCursors()
+    @Query("UPDATE chats SET localEventSequence = 0, latestEventSequence = 0, pendingFullResync = 1")
+    suspend fun resetAllSyncState()
 
     @Query("UPDATE chats SET hasUnreads = :hasUnreads WHERE rowID = :rowID")
     suspend fun updateHasUnreads(rowID: Long, hasUnreads: Boolean)
 
-    @Query("UPDATE chats SET hasUnreads = :hasUnreads, unreadCount = :unreadCount, lastReadMessageDate = :lastReadMessageDate WHERE rowID = :rowID")
-    suspend fun updateUnreadState(rowID: Long, hasUnreads: Boolean, unreadCount: Int, lastReadMessageDate: String?)
+    @Query("UPDATE chats SET hasUnreads = :hasUnreads, unreadCount = :unreadCount, lastReadMessageDate = :lastReadMessageDate, readAckPending = :readAckPending WHERE rowID = :rowID")
+    suspend fun updateUnreadState(rowID: Long, hasUnreads: Boolean, unreadCount: Int, lastReadMessageDate: String?, readAckPending: Boolean)
+
+    @Query("UPDATE chats SET lastMessageDate = NULL, lastMessageText = NULL, lastMessageIsFromMe = NULL, hasUnreads = 0, unreadCount = 0, lastReadMessageDate = NULL WHERE rowID = :chatRowID")
+    suspend fun clearDerivedState(chatRowID: Long)
 }

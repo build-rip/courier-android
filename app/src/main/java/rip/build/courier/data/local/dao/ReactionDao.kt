@@ -17,6 +17,9 @@ interface ReactionDao {
     @Query("SELECT MAX(rowID) FROM reactions WHERE chatRowID = :chatRowID")
     suspend fun getMaxRowID(chatRowID: Long): Long?
 
+    @Query("SELECT * FROM reactions WHERE chatRowID = :chatRowID ORDER BY date ASC")
+    suspend fun getByChatId(chatRowID: Long): List<ReactionEntity>
+
     @Upsert
     suspend fun upsert(reaction: ReactionEntity)
 
@@ -29,6 +32,9 @@ interface ReactionDao {
     // Delete all server-confirmed reactions for a chat (preserves pending optimistic ones)
     @Query("DELETE FROM reactions WHERE chatRowID = :chatRowID AND sendStatus IS NULL")
     suspend fun deleteConfirmedForChat(chatRowID: Long)
+
+    @Query("DELETE FROM reactions WHERE chatRowID = :chatRowID")
+    suspend fun deleteByChatId(chatRowID: Long)
 
     // Remove any existing reaction from a sender on a specific message part (enforces one-reaction-per-user-per-part)
     @Query("DELETE FROM reactions WHERE targetMessageGUID = :targetGuid AND partIndex = :partIndex AND (senderID = :senderID OR (senderID IS NULL AND :senderID IS NULL)) AND isFromMe = :isFromMe AND sendStatus IS NULL")
@@ -49,4 +55,7 @@ interface ReactionDao {
     // Find the current user's confirmed (server-acknowledged) reaction on a message part
     @Query("SELECT * FROM reactions WHERE targetMessageGUID = :targetGuid AND partIndex = :partIndex AND isFromMe = 1 AND sendStatus IS NULL AND isRemoval = 0 LIMIT 1")
     suspend fun findMyConfirmedReaction(targetGuid: String, partIndex: Int): ReactionEntity?
+
+    @Query("SELECT * FROM reactions WHERE chatRowID = :chatRowID AND sendStatus IS NOT NULL ORDER BY date ASC")
+    suspend fun getPendingByChatId(chatRowID: Long): List<ReactionEntity>
 }

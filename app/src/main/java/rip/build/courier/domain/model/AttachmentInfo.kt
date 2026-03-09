@@ -4,6 +4,7 @@ data class AttachmentInfo(
     val messageRowID: Long,
     val rowID: Long,
     val guid: String,
+    val downloadId: Long? = null,
     val mimeType: String?,
     val transferName: String?,
     val totalBytes: Long,
@@ -34,6 +35,9 @@ data class AttachmentInfo(
 
     val isDownloading: Boolean
         get() = downloadState == "downloading"
+
+    val isUnavailable: Boolean
+        get() = downloadState == "unavailable"
 
     val downloadFailed: Boolean
         get() = downloadState == "failed"

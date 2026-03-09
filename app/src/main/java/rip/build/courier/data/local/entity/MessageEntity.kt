@@ -1,9 +1,13 @@
 package rip.build.courier.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "messages")
+@Entity(
+    tableName = "messages",
+    indices = [Index(value = ["guid"], unique = true), Index("chatRowID")]
+)
 data class MessageEntity(
     @PrimaryKey val rowID: Long,
     val guid: String,
@@ -20,6 +24,7 @@ data class MessageEntity(
     val richText: String? = null,
     val balloonBundleID: String? = null,
     val threadOriginatorGuid: String? = null,
+    val deletedAt: String? = null,
     val sendStatus: String? = null,
     val sendError: String? = null,
     val linkPreviewTitle: String? = null,

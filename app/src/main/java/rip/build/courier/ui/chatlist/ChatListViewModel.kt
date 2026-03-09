@@ -3,6 +3,7 @@ package rip.build.courier.ui.chatlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import rip.build.courier.data.remote.websocket.ConnectionState
+import rip.build.courier.data.remote.websocket.WebSocketEventHandler
 import rip.build.courier.data.remote.websocket.WebSocketManager
 import rip.build.courier.data.repository.ChatRepository
 import rip.build.courier.domain.model.Chat
@@ -19,6 +20,7 @@ import javax.inject.Inject
 class ChatListViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val contactResolver: ContactResolver,
+    private val webSocketEventHandler: WebSocketEventHandler,
     webSocketManager: WebSocketManager
 ) : ViewModel() {
 
@@ -40,7 +42,7 @@ class ChatListViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            chatRepository.refreshChats()
+            webSocketEventHandler.triggerSync()
             _isRefreshing.value = false
         }
     }

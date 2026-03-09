@@ -75,7 +75,7 @@ fun SyncDebugScreen(
         AlertDialog(
             onDismissRequest = { showResetConfirm = false },
             title = { Text("Reset Sync Cursor?") },
-            text = { Text("This resets all per-chat sync cursors to 0. The next sync will re-fetch all data from the bridge.") },
+            text = { Text("This resets local conversation event cursors and forces the next sync to rebuild each conversation from the bridge event log.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.resetSyncCursor()
@@ -92,7 +92,7 @@ fun SyncDebugScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirm = false },
             title = { Text("Clear Local Data?") },
-            text = { Text("This deletes all local messages, chats, and reactions, and resets the sync cursor. Data will be re-synced from the bridge.") },
+            text = { Text("This deletes all local events and derived conversation state. Data will be rebuilt from the bridge event log.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearLocalData()
@@ -243,7 +243,7 @@ fun SyncDebugScreen(
                     onClick = { showResetConfirm = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Reset Sync Cursor")
+                    Text("Reset Event Cursors")
                 }
 
                 OutlinedButton(

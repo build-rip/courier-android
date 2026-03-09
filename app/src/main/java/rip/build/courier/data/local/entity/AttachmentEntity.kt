@@ -6,12 +6,13 @@ import androidx.room.Index
 @Entity(
     tableName = "attachments",
     primaryKeys = ["messageRowID", "rowID"],
-    indices = [Index("rowID"), Index("messageRowID")]
+    indices = [Index("rowID"), Index("messageRowID"), Index(value = ["guid"], unique = true)]
 )
 data class AttachmentEntity(
     val messageRowID: Long,
     val rowID: Long,
     val guid: String,
+    val downloadId: Long? = null,
     val mimeType: String?,
     val transferName: String?,
     val totalBytes: Long,

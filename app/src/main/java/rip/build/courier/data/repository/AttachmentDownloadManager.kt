@@ -64,6 +64,8 @@ class AttachmentDownloadManager @Inject constructor(
     fun requestManualDownload(messageRowID: Long, rowID: Long) {
         scope.launch {
             // Reset state and attempts from too_large/failed to pending, then enqueue
+            val attachment = attachmentDao.getById(messageRowID, rowID) ?: return@launch
+            if (attachment.downloadId == null) return@launch
             attachmentDao.resetForManualRetry(messageRowID, rowID)
             downloadChannel.send(listOf(AttachmentKey(messageRowID = messageRowID, attachmentRowID = rowID)))
         }
@@ -72,9 +74,13 @@ class AttachmentDownloadManager @Inject constructor(
     private suspend fun downloadAttachment(key: AttachmentKey) {
         val entity = attachmentDao.getById(key.messageRowID, key.attachmentRowID) ?: return
         if (entity.downloadState != "pending") return
+        val downloadId = entity.downloadId ?: run {
+            attachmentDao.updateDownloadState(entity.messageRowID, entity.rowID, "unavailable", 0, null)
+            return
+        }
 
         val hostUrl = authPreferences.getHostUrl() ?: return
-        val url = "$hostUrl/api/attachments/${entity.rowID}"
+        val url = "$hostUrl/api/attachments/$downloadId"
 
         attachmentDao.updateDownloadState(entity.messageRowID, entity.rowID, "downloading", 0, null)
 

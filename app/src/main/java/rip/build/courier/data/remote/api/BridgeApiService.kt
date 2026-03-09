@@ -16,57 +16,41 @@ interface BridgeApiService {
 
     // Protected endpoints
 
-    @GET("api/chats")
-    suspend fun getChats(@Query("limit") limit: Int = 200): ChatListResponse
+    @GET("api/conversations")
+    suspend fun getConversations(): ConversationListResponse
 
-    @GET("api/chats/{id}/messages")
-    suspend fun getMessages(
-        @Path("id") chatRowID: Long,
-        @Query("limit") limit: Int = 50,
-        @Query("after") after: Long? = null
-    ): List<MessageDto>
-
-    @GET("api/chats/{id}/reactions")
-    suspend fun getReactions(
-        @Path("id") chatRowID: Long,
-        @Query("limit") limit: Int = 200,
-        @Query("after") after: Long? = null
-    ): List<ReactionDto>
-
-    @GET("api/chats/{id}/participants")
-    suspend fun getParticipants(@Path("id") chatRowID: Long): List<ParticipantDto>
+    @GET("api/conversations/{id}/events")
+    suspend fun getConversationEvents(
+        @Path("id") conversationId: String,
+        @Query("conversationVersion") conversationVersion: Int,
+        @Query("from") from: Long,
+        @Query("limit") limit: Int = 500
+    ): Response<ConversationEventsResponseDto>
 
     @GET("api/messages/{id}/attachments")
     suspend fun getAttachments(@Path("id") messageRowID: Long): List<AttachmentDto>
 
-    @POST("api/chats/{id}/messages")
+    @POST("api/conversations/{id}/messages")
     suspend fun sendMessage(
-        @Path("id") chatRowID: Long,
+        @Path("id") conversationId: String,
         @Body request: SendMessageRequest
-    ): Response<Unit>
+    ): Response<MutationResponseDto>
 
-    @POST("api/chats/{id}/tapback")
+    @POST("api/conversations/{id}/tapback")
     suspend fun sendTapback(
-        @Path("id") chatRowID: Long,
+        @Path("id") conversationId: String,
         @Body request: TapbackRequest
-    ): Response<Unit>
+    ): Response<MutationResponseDto>
 
-    @HTTP(method = "DELETE", path = "api/chats/{id}/tapback", hasBody = true)
+    @HTTP(method = "DELETE", path = "api/conversations/{id}/tapback", hasBody = true)
     suspend fun removeTapback(
-        @Path("id") chatRowID: Long,
+        @Path("id") conversationId: String,
         @Body request: TapbackRequest
-    ): Response<Unit>
+    ): Response<MutationResponseDto>
 
-    @POST("api/chats/{id}/read")
-    suspend fun markChatAsRead(@Path("id") chatRowID: Long): Response<Unit>
-
-    @GET("api/chats/{id}/sync")
-    suspend fun syncChat(
-        @Path("id") chatRowID: Long,
-        @Query("msgAfter") msgAfter: Long = 0,
-        @Query("rxnAfter") rxnAfter: Long = 0,
-        @Query("readAfter") readAfter: Long = 0,
-        @Query("deliveryAfter") deliveryAfter: Long = 0,
-        @Query("limit") limit: Int = 500
-    ): ChatSyncResponse
+    @POST("api/conversations/{id}/read")
+    suspend fun markConversationAsRead(
+        @Path("id") conversationId: String,
+        @Body request: MarkReadRequest
+    ): Response<MutationResponseDto>
 }

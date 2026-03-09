@@ -10,7 +10,6 @@ import rip.build.courier.data.repository.MessageRepository
 import rip.build.courier.domain.model.AttachmentInfo
 import rip.build.courier.domain.model.Chat
 import rip.build.courier.domain.model.Message
-import rip.build.courier.domain.model.Participant
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Collections
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,13 +39,14 @@ class ChatDetailViewModel @Inject constructor(
         viewModelScope.launch {
             activeChatRowID.collect { chatRowID ->
                 launch {
-                    messageRepository.syncChat(chatRowID)
-                    messageRepository.fetchMissingAttachmentMetadataForChat(chatRowID) { pendingIDs ->
-                        attachmentDownloadManager.enqueueDownloads(pendingIDs)
+                    messageRepository.syncChat(chatRowID).onFailure {
+                        _errorMessage.emit(it.message ?: "Couldn't sync conversation")
                     }
                 }
                 launch {
-                    chatRepository.markAsRead(chatRowID)
+                    chatRepository.markAsRead(chatRowID).onFailure {
+                        _errorMessage.emit(it.message ?: "Couldn't confirm read state")
+                    }
                 }
             }
         }
@@ -58,10 +58,6 @@ class ChatDetailViewModel @Inject constructor(
 
     val messages: StateFlow<List<Message>> = activeChatRowID
         .flatMapLatest { messageRepository.observeMessages(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val participants: StateFlow<List<Participant>> = activeChatRowID
-        .flatMapLatest { chatRepository.observeParticipants(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val baseUrl: StateFlow<String?> = authPreferences.hostUrl
@@ -141,13 +137,6 @@ class ChatDetailViewModel @Inject constructor(
     private val metadataFetchInFlight = Collections.synchronizedSet(mutableSetOf<Long>())
 
     fun ensureAttachmentMetadata(messageRowID: Long) {
-        if (!metadataFetchInFlight.add(messageRowID)) return
-        viewModelScope.launch {
-            try {
-                messageRepository.refreshAttachments(messageRowID)
-            } catch (_: Exception) {
-                metadataFetchInFlight.remove(messageRowID)
-            }
-        }
+        metadataFetchInFlight.add(messageRowID)
     }
 }

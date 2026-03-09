@@ -11,9 +11,10 @@ import rip.build.courier.data.local.entity.*
         MessageEntity::class,
         ReactionEntity::class,
         ParticipantEntity::class,
-        AttachmentEntity::class
+        AttachmentEntity::class,
+        ConversationEventEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -22,4 +23,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reactionDao(): ReactionDao
     abstract fun participantDao(): ParticipantDao
     abstract fun attachmentDao(): AttachmentDao
+    abstract fun conversationEventDao(): ConversationEventDao
 }

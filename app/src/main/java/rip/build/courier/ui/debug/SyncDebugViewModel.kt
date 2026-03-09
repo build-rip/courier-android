@@ -61,7 +61,7 @@ class SyncDebugViewModel @Inject constructor(
 
     fun resetSyncCursor() {
         viewModelScope.launch {
-            chatDao.resetAllSyncCursors()
+            chatDao.resetAllSyncState()
         }
     }
 

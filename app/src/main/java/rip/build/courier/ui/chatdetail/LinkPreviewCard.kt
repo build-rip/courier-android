@@ -58,11 +58,11 @@ fun LinkPreviewCard(
                 onLongClick = onLongPress
             )
     ) {
-        if (imageAttachment != null && baseUrl != null) {
+        if (imageAttachment != null && baseUrl != null && (imageAttachment.isDownloaded || imageAttachment.downloadId != null)) {
             val imageModel: Any = if (imageAttachment.isDownloaded) {
                 java.io.File(imageAttachment.localFilePath!!)
             } else {
-                "$baseUrl/api/attachments/${imageAttachment.rowID}"
+                "$baseUrl/api/attachments/${imageAttachment.downloadId}"
             }
             AdaptiveThumbnail(
                 imageModel = imageModel,
