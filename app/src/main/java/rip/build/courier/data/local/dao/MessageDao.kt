@@ -20,6 +20,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE chatRowID = :chatRowID ORDER BY date ASC")
     suspend fun getByChatId(chatRowID: Long): List<MessageEntity>
 
+    @Query("SELECT COUNT(*) FROM messages WHERE sendStatus IS NULL")
+    suspend fun countConfirmedMessages(): Int
+
     @Upsert
     suspend fun upsert(message: MessageEntity)
 

@@ -20,6 +20,9 @@ interface ReactionDao {
     @Query("SELECT * FROM reactions WHERE chatRowID = :chatRowID ORDER BY date ASC")
     suspend fun getByChatId(chatRowID: Long): List<ReactionEntity>
 
+    @Query("SELECT COUNT(*) FROM reactions WHERE sendStatus IS NULL AND isRemoval = 0")
+    suspend fun countConfirmedReactions(): Int
+
     @Upsert
     suspend fun upsert(reaction: ReactionEntity)
 

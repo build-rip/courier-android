@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import rip.build.courier.data.local.dao.MessageDao
+import rip.build.courier.data.local.dao.ReactionDao
 import rip.build.courier.data.repository.ChatRepository
 import rip.build.courier.data.repository.MessageRepository
 
@@ -33,7 +35,9 @@ data class SyncResult(
 class WebSocketEventHandler @Inject constructor(
     private val webSocketManager: WebSocketManager,
     private val messageRepository: MessageRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val messageDao: MessageDao,
+    private val reactionDao: ReactionDao
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -93,14 +97,14 @@ class WebSocketEventHandler @Inject constructor(
         val result = try {
             val refreshResult = chatRepository.refreshChatsAndFindUpdates().getOrThrow()
             val total = refreshResult.chatsNeedingSync.size
-            var totalMessageEvents = 0
-            var totalReactionEvents = 0
+            var totalMessageEvents = messageDao.countConfirmedMessages()
+            var totalReactionEvents = reactionDao.countConfirmedReactions()
 
-            _syncProgress.value = SyncProgress(0, total, 0, 0)
+            _syncProgress.value = SyncProgress(0, total, totalMessageEvents, totalReactionEvents)
             for ((index, chatRowID) in refreshResult.chatsNeedingSync.withIndex()) {
-                messageRepository.syncChat(chatRowID).getOrNull()?.let { (messages, reactions) ->
-                    totalMessageEvents += messages
-                    totalReactionEvents += reactions
+                messageRepository.syncChat(chatRowID).getOrNull()?.let {
+                    totalMessageEvents = messageDao.countConfirmedMessages()
+                    totalReactionEvents = reactionDao.countConfirmedReactions()
                 }
                 chatsSynced = index + 1
                 _syncProgress.value = SyncProgress(chatsSynced, total, totalMessageEvents, totalReactionEvents)
