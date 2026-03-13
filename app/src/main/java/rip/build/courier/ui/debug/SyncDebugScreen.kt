@@ -179,18 +179,25 @@ fun SyncDebugScreen(
                 // Sync Section
                 SectionHeader("Sync")
 
-                syncProgress?.let { p ->
-                    InfoRow("Progress", "${p.chatsSynced} / ${p.chatsTotal} chats")
-                    InfoRow("Messages", p.messagesCount.toString())
-                    InfoRow("Reactions", p.reactionsCount.toString())
-                }
+                val chatsStat = syncProgress?.let { "${it.chatsSynced} / ${it.chatsTotal}" }
+                    ?: lastSyncResult?.chatsSynced?.toString()
+                    ?: "-"
+                val messagesStat = syncProgress?.messagesCount?.toString()
+                    ?: lastSyncResult?.messagesCount?.toString()
+                    ?: "-"
+                val reactionsStat = syncProgress?.reactionsCount?.toString()
+                    ?: lastSyncResult?.reactionsCount?.toString()
+                    ?: "-"
+
+                InfoRow("Chats", chatsStat)
+                InfoRow("Messages", messagesStat)
+                InfoRow("Reactions", reactionsStat)
 
                 val syncSummary = lastSyncResult?.let { r ->
-                    val status = if (r.success) "OK" else "Failed"
                     val detail = if (r.success) {
-                        "$status - ${r.chatsSynced} chats, ${r.messagesCount} msgs, ${r.reactionsCount} rxns"
+                        "OK"
                     } else {
-                        "$status: ${r.error}"
+                        "ERR ${r.error}"
                     }
                     "$detail\n${formatRelativeTime(r.time)}"
                 } ?: "never"
